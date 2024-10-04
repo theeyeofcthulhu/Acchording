@@ -90,7 +90,10 @@ void Section::print(std::ostream &out)
         for (int j = 0; j < global_array->size(); j++) {
             const Section &other = (*global_array)[j];
             if (other.type == Section::Type::Reproducible && other.name == name) {
-                assert(other.output.has_value());
+                if (!other.output.has_value()) {
+                    fmt::print(stderr, "Warning: Attempting to reproduce [{}], which is undefined at this point\n", name);
+                    return;
+                }
                 out << other.output.value();
                 return;
             }
