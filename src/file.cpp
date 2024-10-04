@@ -26,6 +26,24 @@ Section scan_section(std::string_view sec)
     for (; std::isspace(sec[remainder_beg]) && remainder_beg < sec.size(); remainder_beg++)
         ;
 
+    // Parse special commands
+    while (true) {
+        if (res.name.starts_with('!')) {
+            res.hide_name = true;
+            res.name.erase(res.name.begin());
+        } else if (res.name.starts_with('>')) {
+            res.type = Section::Type::Reproducible;
+            res.name.erase(res.name.begin());
+        } else if (res.name.starts_with('<')) {
+            res.type = Section::Type::Reproducing;
+            res.name.erase(res.name.begin());
+        } else {
+            break;
+        }
+    }
+    if (res.type == Section::Type::Reproducing)
+        return res;
+
     // No content
     if (remainder_beg == sec.size()) {
         res.text = "";
@@ -165,9 +183,25 @@ void FileFormatter::print_info()
     }
 }
 
-void FileFormatter::print_section(Section &sec, std::ostream &out)
+void FileFormatter::print_section(std::vector<Section> &secs, int index, std::ostream &out)
 {
-    fmt::print(out, "[{}]\n\n", sec.name);
+    auto &sec = secs[index];
+    if (sec.type == Section::Type::Reproducing) {
+        for (int j = index-1; j >= 0; j--) {
+            if (secs[j].type == Section::Type::Reproducible && secs[j].name == sec.name) {
+                assert(secs[j].output.has_value());
+                out << secs[j].output.value();
+                return;
+            }
+        }
+        fmt::print(stderr, "Warning: Trying to reproduce [{}], which was never defined\n", sec.name);
+        return;
+    }
+
+    std::stringstream outs;
+
+    if (!sec.hide_name)
+        fmt::print(outs, "[{}]\n\n", sec.name);
 
     if (sec.chords.has_value()) {
         std::stringstream ss(sec.text);
@@ -188,12 +222,17 @@ void FileFormatter::print_section(Section &sec, std::ostream &out)
                 }
             }
 
-            fmt::print(out, "{}\n{}\n", chord_line, buf);
+            fmt::print(outs, "{}\n{}\n", chord_line, buf);
         }
     } else {
-        fmt::print(out, "{}", sec.text);
+        fmt::print(outs, "{}", sec.text);
     }
-    fmt::print(out, "\n");
+    fmt::print(outs, "\n");
+
+    if (sec.type == Section::Type::Reproducible) {
+        sec.output.emplace(outs.str());
+    }
+    out << outs.str();
 }
 
 void FileFormatter::print_formatted_txt()
@@ -201,8 +240,8 @@ void FileFormatter::print_formatted_txt()
     fmt::print("{} - {}\n", author, title);
     fmt::print("Capo {} - Key {} - Tuning: {}\n\n", capo.value_or("-"), key.value_or("?"), tuning.value_or("Standard"));
 
-    for (auto &sec : secs) {
-        print_section(sec, std::cout);
+    for (int i = 0; i < secs.size(); i++) {
+        print_section(secs, i, std::cout);
     }
 }
 
@@ -260,9 +299,9 @@ void FileFormatter::print_formatted_pdf(const std::string &fn, int body_font_siz
         def_font = HPDF_GetFont(pdf, font_name, NULL);
 
         HPDF_Page_SetFontAndSize(page, def_font, body_font_size);
-        for (auto &sec : secs) {
+        for (int i = 0; i < secs.size(); i++) {
             std::stringstream ss;
-            print_section(sec, ss);
+            print_section(secs, i, ss);
 
             std::string buf;
             while (std::getline(ss, buf)) {
