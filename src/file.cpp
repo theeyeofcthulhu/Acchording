@@ -13,14 +13,14 @@
 
 #include "file.hpp"
 
-Section scan_section(std::string_view sec)
-{
-    Section res;
+std::vector<Section> *Section::global_array = nullptr;
 
+Section::Section(std::string_view sec)
+{
     assert(sec.contains('[') && sec.contains(']'));
     assert(sec.starts_with('['));
 
-    res.name = sec.substr(1, sec.find(']')-1);
+    name = sec.substr(1, sec.find(']')-1);
 
     size_t remainder_beg = sec.find(']') + 1;
     for (; std::isspace(sec[remainder_beg]) && remainder_beg < sec.size(); remainder_beg++)
@@ -28,26 +28,26 @@ Section scan_section(std::string_view sec)
 
     // Parse special commands
     while (true) {
-        if (res.name.starts_with('!')) {
-            res.hide_name = true;
-            res.name.erase(res.name.begin());
-        } else if (res.name.starts_with('>')) {
-            res.type = Section::Type::Reproducible;
-            res.name.erase(res.name.begin());
-        } else if (res.name.starts_with('<')) {
-            res.type = Section::Type::Reproducing;
-            res.name.erase(res.name.begin());
+        if (name.starts_with('!')) {
+            hide_name = true;
+            name.erase(name.begin());
+        } else if (name.starts_with('>')) {
+            type = Section::Type::Reproducible;
+            name.erase(name.begin());
+        } else if (name.starts_with('<')) {
+            type = Section::Type::Reproducing;
+            name.erase(name.begin());
         } else {
             break;
         }
     }
-    if (res.type == Section::Type::Reproducing)
-        return res;
+    if (type == Section::Type::Reproducing)
+        return;
 
     // No content
     if (remainder_beg == sec.size()) {
-        res.text = "";
-        return res;
+        text = "";
+        return;
     }
 
     std::string_view remainder = sec.substr(remainder_beg);
@@ -58,17 +58,17 @@ Section scan_section(std::string_view sec)
         // in gcc yet?)
         std::string chords_s(remainder.substr(remainder.find(':') + 1, remainder.find('\n') - (remainder.find(':')+1)));
 
-        res.chords.emplace(); // Initializes the optional queue
+        chords.emplace(); // Initializes the optional queue
 
         std::stringstream ss(chords_s);
         std::string buf;
 
         while (std::getline(ss, buf, ' ')) {
             if (!buf.empty())
-                res.chords->push(buf);
+                chords->push(buf);
         }
 
-        if (res.chords->empty()) {
+        if (chords->empty()) {
             fmt::print(stderr, "Warning: chords are empty\n");
         }
 
@@ -78,10 +78,62 @@ Section scan_section(std::string_view sec)
     while (isspace(remainder[remainder.size()-1]))
         remainder.remove_suffix(1);
 
-    res.text = remainder;
-    res.text.append("\n");
+    text = remainder;
+    text.append("\n");
+}
 
-    return res;
+void Section::print(std::ostream &out)
+{
+    assert(global_array);
+
+    if (type == Section::Type::Reproducing) {
+        for (int j = 0; j < global_array->size(); j++) {
+            const Section &other = (*global_array)[j];
+            if (other.type == Section::Type::Reproducible && other.name == name) {
+                assert(other.output.has_value());
+                out << other.output.value();
+                return;
+            }
+        }
+        fmt::print(stderr, "Warning: Trying to reproduce [{}], which was never defined\n", name);
+        return;
+    }
+
+    std::stringstream outs;
+
+    if (!hide_name)
+        fmt::print(outs, "[{}]\n\n", name);
+
+    if (chords.has_value()) {
+        std::stringstream ss(text);
+        std::string buf;
+
+        while (std::getline(ss, buf)) {
+            std::string chord_line(buf.size(), ' ');
+            while (buf.contains('>')) {
+                size_t pos = buf.find('>');
+
+                buf.erase(pos, 1);
+                
+                if (!chords->empty()) {
+                    chord_line.insert(pos, chords->front());
+                    chords->pop();
+                } else {
+                    chord_line.insert(pos, "?");
+                }
+            }
+
+            fmt::print(outs, "{}\n{}\n", chord_line, buf);
+        }
+    } else {
+        fmt::print(outs, "{}", text);
+    }
+    fmt::print(outs, "\n");
+
+    if (type == Section::Type::Reproducible) {
+        output.emplace(outs.str());
+    }
+    out << outs.str();
 }
 
 FileFormatter::FileFormatter(const char *fn)
@@ -137,6 +189,8 @@ FileFormatter::FileFormatter(const char *fn)
     }
 
     // Read sections
+    
+    Section::global_array = &secs;
 
     // We still have the first line in buf because
     // last loop ended because of it
@@ -167,72 +221,8 @@ FileFormatter::FileFormatter(const char *fn)
         buf.push_back('\n'); // Was removed
         buf.append(section_content.str());
 
-        secs.push_back(scan_section(buf));
+        secs.push_back(Section(buf));
     } while (std::getline(f, buf));
-}
-
-void FileFormatter::print_info()
-{
-    fmt::print("\"{}\" by {}\nCapo on {}, key of {}, tuning: {}\n", title, author,
-                                                                    capo.value_or("?"),
-                                                                    key.value_or("?"),
-                                                                    tuning.value_or("?"));
-
-    for (const auto &sec : secs) {
-        fmt::print("Section \"{}\", {} chords\n", sec.name, sec.chords.has_value() ? "with" : "without");
-    }
-}
-
-void FileFormatter::print_section(std::vector<Section> &secs, int index, std::ostream &out)
-{
-    auto &sec = secs[index];
-    if (sec.type == Section::Type::Reproducing) {
-        for (int j = index-1; j >= 0; j--) {
-            if (secs[j].type == Section::Type::Reproducible && secs[j].name == sec.name) {
-                assert(secs[j].output.has_value());
-                out << secs[j].output.value();
-                return;
-            }
-        }
-        fmt::print(stderr, "Warning: Trying to reproduce [{}], which was never defined\n", sec.name);
-        return;
-    }
-
-    std::stringstream outs;
-
-    if (!sec.hide_name)
-        fmt::print(outs, "[{}]\n\n", sec.name);
-
-    if (sec.chords.has_value()) {
-        std::stringstream ss(sec.text);
-        std::string buf;
-
-        while (std::getline(ss, buf)) {
-            std::string chord_line(buf.size(), ' ');
-            while (buf.contains('>')) {
-                size_t pos = buf.find('>');
-
-                buf.erase(pos, 1);
-                
-                if (!sec.chords->empty()) {
-                    chord_line.insert(pos, sec.chords->front());
-                    sec.chords->pop();
-                } else {
-                    chord_line.insert(pos, "?");
-                }
-            }
-
-            fmt::print(outs, "{}\n{}\n", chord_line, buf);
-        }
-    } else {
-        fmt::print(outs, "{}", sec.text);
-    }
-    fmt::print(outs, "\n");
-
-    if (sec.type == Section::Type::Reproducible) {
-        sec.output.emplace(outs.str());
-    }
-    out << outs.str();
 }
 
 void FileFormatter::print_formatted_txt()
@@ -240,19 +230,18 @@ void FileFormatter::print_formatted_txt()
     fmt::print("{} - {}\n", author, title);
     fmt::print("Capo {} - Key {} - Tuning: {}\n\n", capo.value_or("-"), key.value_or("?"), tuning.value_or("Standard"));
 
-    for (int i = 0; i < secs.size(); i++) {
-        print_section(secs, i, std::cout);
+    for (auto &sec : secs) {
+        sec.print(std::cout);
     }
 }
 
 // https://github.com/libharu/libharu/wiki/Error-handling
-void error_handler (HPDF_STATUS error_no, HPDF_STATUS detail_no, void *user_data)
+void error_handler(HPDF_STATUS error_no, HPDF_STATUS detail_no, void *user_data)
 {
     fmt::print(stderr, "hpdf: error_no={:x}, detail_no={}\n",
       (unsigned int) error_no, (int) detail_no);
     throw std::exception (); /* throw exception on error */
 }
-
 
 void FileFormatter::print_formatted_pdf(const std::string &fn, int body_font_size, const std::string &body_font)
 {
@@ -299,9 +288,9 @@ void FileFormatter::print_formatted_pdf(const std::string &fn, int body_font_siz
         def_font = HPDF_GetFont(pdf, font_name, NULL);
 
         HPDF_Page_SetFontAndSize(page, def_font, body_font_size);
-        for (int i = 0; i < secs.size(); i++) {
+        for (auto &sec : secs) {
             std::stringstream ss;
-            print_section(secs, i, ss);
+            sec.print(ss);
 
             std::string buf;
             while (std::getline(ss, buf)) {

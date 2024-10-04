@@ -35,6 +35,14 @@ Happy >Birthday
 to >you
 ```
 
+### Special Sections
+
+```
+[!Section Name] (Hides section name in output)
+[>Section Name] (Defines section to be reproduced later)
+[<Section Name] (Reproduces section)
+```
+
 (You can, of course, also specify the chords already formatted in plain text.)
 
 ## Example

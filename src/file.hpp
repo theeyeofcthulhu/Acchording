@@ -4,13 +4,22 @@
 #include <string>
 #include <vector>
 
-struct Section {
+class Section {
+public:
     enum class Type {
         Normal,
         Reproducible,
         Reproducing
     };
 
+    Section(std::string_view sec);
+    void print(std::ostream &out);
+
+    // This is for accessing the other sections
+    // when reaccessing a prior defined one
+    static std::vector<Section> *global_array;
+
+private:
     Type type = Type::Normal;
 
     std::string name;
@@ -25,7 +34,6 @@ class FileFormatter {
 public:
     FileFormatter(const char *fn);
 
-    void print_info();
     void print_formatted_txt();
     void print_formatted_pdf(const std::string &fn, int body_font_size, const std::string &body_font);
 private:
