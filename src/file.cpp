@@ -12,9 +12,6 @@
 
 #include "file.hpp"
 
-#include <iostream>
-#include "dbg.h"
-
 Section scan_section(std::string_view sec)
 {
     Section res;
