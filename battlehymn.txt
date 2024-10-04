@@ -1,0 +1,26 @@
+author: Julia Ward Howe
+title: The Battle Hymn of the Republic
+capo: None
+key: G
+tuning: Standard
+
+[Verse]
+chords: G G7 G7/B C G D7 G G7 B7 Em Am D4 D G
+Mine >eyes have seen the glory of the >coming of the >Lord;
+He is >trampling out the vintage where the >grapes of wrath are >stored;
+He hath >loosed the fateful >lightning of His >terrible, swift >sword; 
+His >truth is >mar->ching >on.
+
+[Chorus]
+G                   G7  G7/B   C      C7          G  G7
+Glory! Glory! halle-lu- jah!   Glory! Glory! hallelu-jah!
+G      G7/F         B7/D#  Em       Am       D4  D     G
+Glory! Glory! halle- lu - jah!  His truth is mar-ching on.
+
+[Verse]
+I have read a fiery gospel writ in burnished rows of steel;
+"As ye deal with my contemners, so with you my grace shall deal;
+Let the Hero, born of woman, crush the serpent with his heel,
+Since God is mar-ching on."
+
+[Chorus]

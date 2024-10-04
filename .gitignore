@@ -1,0 +1,12 @@
+acchording
+*.pdf
+build.sh
+build/
+file
+file.pdf
+file.txt
+ideas.md
+outline.md
+rollingstone.chords
+rollingstone.pdf
+rollingstone.txt
