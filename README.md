@@ -78,3 +78,7 @@ $ cd build
 $ cmake ..
 $ make
 ```
+
+# License
+
+Licensed under the GNU General Public License Version 3, see LICENSE.
