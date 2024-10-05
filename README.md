@@ -26,7 +26,7 @@ to you
 
 ### Chords
 
-Chords are inserted, in order, in new lines above the `<`s, which are removed.
+Chords are inserted, in order, in new lines above the `>`s, which are removed.
 
 ```
 [Section Name]
@@ -60,7 +60,7 @@ $ acchording song.txt > song-chords.txt
 
 ## PDF
 
-Supply font (`.ttf` format) with `-f`, font size with `-s`.
+Supply font (`.ttf` format) with `-f`, font size with `-s`. If you want to print UTF-8 encoded characters (like Cyrillic ones), you have to pass `-u`.
 
 ```
 $ acchording -p song.txt # Outputs song.pdf

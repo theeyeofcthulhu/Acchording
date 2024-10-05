@@ -114,15 +114,27 @@ void Section::print(std::ostream &out)
         while (std::getline(ss, buf)) {
             std::string chord_line(buf.size(), ' ');
             while (buf.contains('>')) {
-                size_t pos = buf.find('>');
+                // TODO: check if file is UTF-8
+                // Skips UTF-8 continuation bytes (starting with 0b10)
+                auto utf8_pos = [](const std::string &s, char c) {
+                    std::pair<size_t, size_t> poss; // 1. real pos, 2. effective pos
+                    for (poss.first = 0, poss.second = 0; s[poss.first] != c && poss.first < s.size(); poss.first++) {
+                        if ((s[poss.first] & 0b11000000) != 0b10000000) { // UTF-8 continuation char
+                            poss.second += 1;
+                        }
+                    }
+                    return poss;
+                };
 
-                buf.erase(pos, 1);
+                auto poss = utf8_pos(buf, '>');
+
+                buf.erase(poss.first, 1);
                 
                 if (!chords->empty()) {
-                    chord_line.insert(pos, chords->front());
+                    chord_line.insert(poss.second, chords->front());
                     chords->pop();
                 } else {
-                    chord_line.insert(pos, "?");
+                    chord_line.insert(poss.second, "?");
                 }
             }
 
@@ -246,7 +258,7 @@ void error_handler(HPDF_STATUS error_no, HPDF_STATUS detail_no, void *user_data)
     throw std::exception (); /* throw exception on error */
 }
 
-void FileFormatter::print_formatted_pdf(const std::string &fn, int body_font_size, const std::string &body_font)
+void FileFormatter::print_formatted_pdf(const std::string &fn, int body_font_size, const std::string &body_font, bool use_utf8)
 {
     HPDF_Doc pdf = HPDF_New(error_handler, NULL);
 
@@ -256,6 +268,11 @@ void FileFormatter::print_formatted_pdf(const std::string &fn, int body_font_siz
     }
 
     try {
+        if (use_utf8) {
+            HPDF_UseUTFEncodings(pdf);
+            HPDF_SetCurrentEncoder(pdf, "UTF-8");
+        }
+
         HPDF_Page page = HPDF_AddPage(pdf);
         
         HPDF_REAL width, height;
@@ -288,7 +305,7 @@ void FileFormatter::print_formatted_pdf(const std::string &fn, int body_font_siz
         HPDF_Page_MoveTextPos(page, left_margin, (pos -= 20));
 
         const char *font_name = HPDF_LoadTTFontFromFile(pdf, body_font.c_str(), HPDF_TRUE);
-        def_font = HPDF_GetFont(pdf, font_name, NULL);
+        def_font = HPDF_GetFont(pdf, font_name, use_utf8 ? "UTF-8" : NULL);
 
         HPDF_Page_SetFontAndSize(page, def_font, body_font_size);
         for (auto &sec : secs) {

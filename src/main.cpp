@@ -15,9 +15,10 @@ int main(int argc, char **argv)
     bool pdf = false;
     int body_font_size = 11;
     std::string body_font = "fonts/Inconsolata-Regular.ttf";
+    bool use_utf8 = false;
 
     int flag;
-    while ((flag = getopt(argc, argv, "ps:f:")) != -1) {
+    while ((flag = getopt(argc, argv, "ps:f:u")) != -1) {
         switch (flag) {
         case 'p':
             pdf = true;
@@ -27,6 +28,9 @@ int main(int argc, char **argv)
             break;
         case 'f':
             body_font = optarg;
+            break;
+        case 'u':
+            use_utf8 = true;
             break;
         case '?':
         default:
@@ -44,6 +48,6 @@ int main(int argc, char **argv)
         std::string_view fn_base(fn);
         fn_base = fn_base.substr(0, fn_base.rfind('.'));
 
-        ff.print_formatted_pdf(fmt::format("{}.pdf", fn_base), body_font_size, body_font);
+        ff.print_formatted_pdf(fmt::format("{}.pdf", fn_base), body_font_size, body_font, use_utf8);
     }
 }
