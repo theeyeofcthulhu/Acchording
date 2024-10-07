@@ -2,6 +2,9 @@
 
 #include <fmt/core.h>
 
+#define JARGS_IMPLEMENTATION
+#include "jargs.hpp"
+
 #include "file.hpp"
 
 int main(int argc, char **argv)
@@ -17,26 +20,22 @@ int main(int argc, char **argv)
     std::string body_font = "fonts/Inconsolata-Regular.ttf";
     bool use_utf8 = false;
 
-    int flag;
-    while ((flag = getopt(argc, argv, "ps:f:u")) != -1) {
-        switch (flag) {
-        case 'p':
-            pdf = true;
-            break;
-        case 's':
-            body_font_size = std::stoi(optarg);
-            break;
-        case 'f':
-            body_font = optarg;
-            break;
-        case 'u':
-            use_utf8 = true;
-            break;
-        case '?':
-        default:
-            return 1;
-        }
-    }
+    jargs::Parser parser;
+    parser.add({'p', "pdf", "Generate PDF", [&pdf]() {
+        pdf = true;
+    }});
+    parser.add({'s', "size", "Specify font size", [&body_font_size](auto optarg) {
+        body_font_size = std::stoi(optarg.data());
+    }});
+    parser.add({'f', "font", "Specify font", [&body_font](auto optarg) {
+        body_font = optarg;
+    }});
+    parser.add({'u', "utf8", "Use UTF-8 in PDF generation", [&use_utf8]() {
+        use_utf8 = true;
+    }});
+    parser.add_help("acchording [args] file");
+
+    parser.parse(argc, argv);
 
     const char *fn = argv[argc-1];
 
