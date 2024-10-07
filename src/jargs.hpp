@@ -157,7 +157,7 @@ void Parser::add_help(std::string_view usage)
 {
     add({'h', "help", "Print help", [usage, this](){
         print_help_page(usage);
-        std::exit(1);
+        std::exit(0);
     }});
 }
 
