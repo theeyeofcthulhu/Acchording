@@ -104,6 +104,8 @@ void Section::print(std::ostream &out)
 
     std::stringstream outs;
 
+    fmt::print(outs, "\n");
+
     if (!hide_name)
         fmt::print(outs, "[{}]\n\n", name);
 
@@ -143,7 +145,6 @@ void Section::print(std::ostream &out)
     } else {
         fmt::print(outs, "{}", text);
     }
-    fmt::print(outs, "\n");
 
     if (type == Section::Type::Reproducible) {
         output.emplace(outs.str());
@@ -243,7 +244,7 @@ FileFormatter::FileFormatter(const char *fn)
 void FileFormatter::print_formatted_txt()
 {
     fmt::print("{} - {}\n", author, title);
-    fmt::print("Capo {} - Key {} - Tuning: {}\n\n", capo.value_or("-"), key.value_or("?"), tuning.value_or("Standard"));
+    fmt::print("Capo {} - Key {} - Tuning: {}\n", capo.value_or("-"), key.value_or("?"), tuning.value_or("Standard"));
 
     for (auto &sec : secs) {
         sec.print(std::cout);
@@ -302,7 +303,7 @@ void FileFormatter::print_formatted_pdf(const std::string &fn, int body_font_siz
 
         // Sections
         HPDF_Page_BeginText(page);
-        HPDF_Page_MoveTextPos(page, left_margin, (pos -= 20));
+        HPDF_Page_MoveTextPos(page, left_margin, (pos -= 10));
 
         const char *font_name = HPDF_LoadTTFontFromFile(pdf, body_font.c_str(), HPDF_TRUE);
         def_font = HPDF_GetFont(pdf, font_name, use_utf8 ? "UTF-8" : NULL);
@@ -326,8 +327,8 @@ void FileFormatter::print_formatted_pdf(const std::string &fn, int body_font_siz
                     HPDF_Page_SetFontAndSize(page, def_font, body_font_size);
                 }
 
-                HPDF_Page_MoveTextPos(page, 0, -(body_font_size+2));
                 HPDF_Page_ShowText(page, buf.c_str());
+                HPDF_Page_MoveTextPos(page, 0, -(body_font_size+2));
             }
         }
         HPDF_Page_EndText(page);
