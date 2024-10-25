@@ -14,7 +14,7 @@ add_executable(acchording ${SOURCES})
 
 find_package(fmt CONFIG REQUIRED)
 target_link_libraries(acchording PRIVATE fmt::fmt-header-only)
-
 target_link_libraries(acchording PRIVATE -lhpdf)
+target_link_libraries(acchording PRIVATE -lfontconfig)
 
 install(TARGETS acchording)
