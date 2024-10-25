@@ -64,7 +64,7 @@ Supply font (`.ttf` format) with `-f`, font size with `-s`. If you want to print
 
 ```
 $ acchording -p song.txt # Outputs song.pdf
-$ acchording -f Font-Regular.ttf -s 12 song.txt
+$ acchording -f "Ubuntu Mono:Regular" -s 12 song.txt
 ```
 
 # Building and Requirements
@@ -73,17 +73,17 @@ $ acchording -f Font-Regular.ttf -s 12 song.txt
 
 - [fmtlib](https://github.com/fmtlib/fmt)
 - [libHaru](http://libharu.org/)
+- [fontconfig](https://www.freedesktop.org/wiki/Software/fontconfig/)
 
 ## Fonts
 
-Fonts folder contains [Ubuntu Mono](https://fonts.google.com/specimen/Ubuntu+Mono) and [Inconsolata](https://fonts.google.com/specimen/Inconsolata) (default when generating PDF) along with their licenses.
+Fonts are fetched with fontconfig. Supply TrueType fonts by names that it will find.
 
-## Building with CMake
+## Building with Make
+
+You can configure some default values by copying `src/config.def.hpp` into `src/config.hpp` and editing that. If you don't, the default values from `src/config.def.hpp` will be used.
 
 ```
-$ mkdir build
-$ cd build
-$ cmake ..
 $ make
 ```
 

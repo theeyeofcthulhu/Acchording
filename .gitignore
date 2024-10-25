@@ -1,3 +1,4 @@
+src/config.hpp
 src/*.o
 acchording
 *.pdf

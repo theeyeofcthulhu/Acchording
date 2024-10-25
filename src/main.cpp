@@ -7,8 +7,7 @@
 
 #include "file.hpp"
 #include "font.hpp"
-
-#define DEFAULT_FONT "Ubuntu Mono:Regular"
+#include "config.hpp"
 
 int main(int argc, char **argv)
 {
@@ -19,8 +18,8 @@ int main(int argc, char **argv)
     }
 
     bool pdf = false;
-    int body_font_size = 11;
-    std::string body_font = DEFAULT_FONT;
+    int body_font_size = ACCHORDING_BODY_FONT_SIZE;
+    std::string body_font = ACCHORDING_BODY_FONT;
     bool use_utf8 = false;
 
     jargs::Parser parser;
