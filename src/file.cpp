@@ -87,7 +87,7 @@ void Section::print(std::ostream &out)
     assert(global_array);
 
     if (type == Section::Type::Reproducing) {
-        for (int j = 0; j < global_array->size(); j++) {
+        for (size_t j = 0; j < global_array->size(); j++) {
             const Section &other = (*global_array)[j];
             if (other.type == Section::Type::Reproducible && other.name == name) {
                 if (!other.output.has_value()) {
@@ -254,6 +254,7 @@ void FileFormatter::print_formatted_txt()
 // https://github.com/libharu/libharu/wiki/Error-handling
 void error_handler(HPDF_STATUS error_no, HPDF_STATUS detail_no, void *user_data)
 {
+    (void)user_data;
     fmt::print(stderr, "hpdf: error_no={:x}, detail_no={}\n",
       (unsigned int) error_no, (int) detail_no);
     throw std::exception (); /* throw exception on error */
@@ -276,9 +277,8 @@ void FileFormatter::print_formatted_pdf(const std::string &fn, int body_font_siz
 
         HPDF_Page page = HPDF_AddPage(pdf);
         
-        HPDF_REAL width, height;
-        height = HPDF_Page_GetHeight (page);
-        width = HPDF_Page_GetWidth (page);
+        HPDF_REAL height;
+        height = HPDF_Page_GetHeight(page);
 
         int pos = height - 50;
         const int left_margin = 50;
