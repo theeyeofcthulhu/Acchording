@@ -35,6 +35,8 @@ Happy >Birthday
 to >you
 ```
 
+(You can, of course, also specify the chords already formatted in plain text.)
+
 ### Special Sections
 
 ```
@@ -42,8 +44,6 @@ to >you
 [>Section Name] (Defines section to be reproduced later)
 [<Section Name] (Reproduces section)
 ```
-
-(You can, of course, also specify the chords already formatted in plain text.)
 
 ## Example
 
@@ -60,11 +60,13 @@ $ acchording song.txt > song-chords.txt
 
 ## PDF
 
-Supply font (`.ttf` format) with `-f`, font size with `-s`. If you want to print UTF-8 encoded characters (like Cyrillic ones), you have to pass `-u`.
+If `-p` is passed, the program will output a PDF containing the input chord sheet.
+
+Pass `--help` for list of available options. If you want to print UTF-8 encoded characters (like Cyrillic ones), you have to pass `-u`.
 
 ```
 $ acchording -p song.txt # Outputs song.pdf
-$ acchording -f "Ubuntu Mono:Regular" -s 12 song.txt
+$ acchording -p --body-font "Ubuntu Mono:Regular" --size 12 song.txt
 ```
 
 # Building and Requirements

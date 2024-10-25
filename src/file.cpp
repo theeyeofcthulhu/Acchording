@@ -260,7 +260,10 @@ void error_handler(HPDF_STATUS error_no, HPDF_STATUS detail_no, void *user_data)
     throw std::exception (); /* throw exception on error */
 }
 
-void FileFormatter::print_formatted_pdf(const std::string &fn, int body_font_size, const std::string &body_font, bool use_utf8)
+void FileFormatter::print_formatted_pdf(const std::string &fn,
+        int body_font_size, const std::string &body_font,
+        const std::string &header_font, const std::string &header_font_bold,
+        bool use_utf8)
 {
     HPDF_Doc pdf = HPDF_New(error_handler, NULL);
 
@@ -283,8 +286,12 @@ void FileFormatter::print_formatted_pdf(const std::string &fn, int body_font_siz
         int pos = height - 50;
         const int left_margin = 50;
 
+        const char *font_name;
+        HPDF_Font def_font;
+
         // Title
-        HPDF_Font def_font = HPDF_GetFont(pdf, "Helvetica-Bold", NULL);
+        font_name = HPDF_LoadTTFontFromFile(pdf, header_font_bold.c_str(), HPDF_TRUE);
+        def_font = HPDF_GetFont(pdf, font_name, use_utf8 ? "UTF-8" : NULL);
         HPDF_Page_SetFontAndSize(page, def_font, 18);
 
         std::string header = fmt::format("{} - {}", author, title);
@@ -293,7 +300,8 @@ void FileFormatter::print_formatted_pdf(const std::string &fn, int body_font_siz
         HPDF_Page_EndText(page);
 
         // Sub header
-        def_font = HPDF_GetFont(pdf, "Helvetica", NULL);
+        font_name = HPDF_LoadTTFontFromFile(pdf, header_font.c_str(), HPDF_TRUE);
+        def_font = HPDF_GetFont(pdf, font_name, use_utf8 ? "UTF-8" : NULL);
         HPDF_Page_SetFontAndSize(page, def_font, 12);
 
         std::string sub_header = fmt::format("Capo {} - Key {} - Tuning: {}", capo.value_or("-"), key.value_or("?"), tuning.value_or("Standard"));
@@ -305,7 +313,7 @@ void FileFormatter::print_formatted_pdf(const std::string &fn, int body_font_siz
         HPDF_Page_BeginText(page);
         HPDF_Page_MoveTextPos(page, left_margin, (pos -= 10));
 
-        const char *font_name = HPDF_LoadTTFontFromFile(pdf, body_font.c_str(), HPDF_TRUE);
+        font_name = HPDF_LoadTTFontFromFile(pdf, body_font.c_str(), HPDF_TRUE);
         def_font = HPDF_GetFont(pdf, font_name, use_utf8 ? "UTF-8" : NULL);
 
         HPDF_Page_SetFontAndSize(page, def_font, body_font_size);

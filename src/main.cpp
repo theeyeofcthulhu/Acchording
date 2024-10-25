@@ -20,6 +20,7 @@ int main(int argc, char **argv)
     bool pdf = false;
     int body_font_size = ACCHORDING_BODY_FONT_SIZE;
     std::string body_font = ACCHORDING_BODY_FONT;
+    std::string header_font = ACCHORDING_HEADER_FONT;
     bool use_utf8 = false;
 
     jargs::Parser parser;
@@ -29,8 +30,13 @@ int main(int argc, char **argv)
     parser.add({'s', "size", "Specify font size", [&body_font_size](auto optarg) {
         body_font_size = std::stoi(optarg.data());
     }});
-    parser.add({'f', "font", "Specify font \"name[:style]\"", [&body_font](auto optarg) {
+    parser.add({'b', "body-font", "Specify font \"name[:style]\" for PDF body", [&body_font](auto optarg) {
         body_font = optarg;
+    }});
+    parser.add({'t', "title-font",
+            "Specify font \"name\" for PDF header; should have 'Regular' and 'Bold' styles",
+            [&header_font](auto optarg) {
+        header_font = optarg;
     }});
     parser.add({'u', "utf8", "Use UTF-8 in PDF generation", [&use_utf8]() {
         use_utf8 = true;
@@ -47,17 +53,21 @@ int main(int argc, char **argv)
         ff.print_formatted_txt();
     } else {
         FontMatcher fm;
-        std::string font_file = fm.match_name(body_font);
-        if (font_file.empty()) {
-            fmt::print(stderr, "Error: Font \"{}\" not found. Aborting.\n", body_font);
-            return 1;
-        }
 
-        fmt::print("Found font: {}\n", font_file);
+        // These shouldn't fail, as fontconfig will just default
+        // back to another font if it can't find a match
+        std::string body_font_file = fm.match_name(body_font);
+        std::string header_font_file = fm.match_name(fmt::format("{}:Regular", header_font));
+        std::string header_bold_font_file = fm.match_name(fmt::format("{}:Bold", header_font));
+
+        fmt::print("Body font: {}\n", body_font_file);
+        fmt::print("Header font: {}\n", header_font_file);
+        fmt::print("Header font (bold): {}\n", header_bold_font_file);
 
         std::string_view fn_base(fn);
         fn_base = fn_base.substr(0, fn_base.rfind('.'));
 
-        ff.print_formatted_pdf(fmt::format("{}.pdf", fn_base), body_font_size, font_file, use_utf8);
+        ff.print_formatted_pdf(fmt::format("{}.pdf", fn_base), body_font_size,
+                body_font_file, header_font_file, header_bold_font_file, use_utf8);
     }
 }

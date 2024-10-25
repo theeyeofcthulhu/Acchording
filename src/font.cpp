@@ -28,25 +28,27 @@ std::string FontMatcher::get_matching_font(FcPattern *pat)
 {
     std::string res;
 
-    FcObjectSet *os = FcObjectSetBuild(FC_FILE, (char *) 0); // What we want in the list
-    FcFontSet *fs = FcFontList(config, pat, os);
+    FcConfigSubstitute(config, pat, FcMatchPattern);
+    FcDefaultSubstitute(pat);
+
+    FcResult match_result;
+    FcPattern *match = FcFontMatch(config, pat, &match_result);
 
     // No font matched pat
-    if (!fs->nfont) {
+    if (match_result != FcResultMatch) {
+        fmt::print(stderr, "fontconfig: Failed to match font\n");
         return res;
     }
 
-    FcPattern *font = fs->fonts[0];
-    FcChar8 *file;
-    if (FcPatternGetString(font, FC_FILE, 0, &file) == FcResultMatch) {
+    FcChar8* file;
+    if (FcPatternGetString(match, FC_FILE, 0, &file) == FcResultMatch) {
         res = (char*)file;
     } else {
         fmt::print(stderr, "fontconfig: Failed to retrieve filename\n");
         return res;
     }
 
-    FcFontSetDestroy(fs);
-    FcObjectSetDestroy(os);
+    FcPatternDestroy(match);
 
     return res;
 }

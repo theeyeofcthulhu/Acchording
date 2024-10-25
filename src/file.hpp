@@ -35,7 +35,10 @@ public:
     FileFormatter(const char *fn);
 
     void print_formatted_txt();
-    void print_formatted_pdf(const std::string &fn, int body_font_size, const std::string &body_font, bool use_utf8);
+    void print_formatted_pdf(const std::string &fn,
+        int body_font_size, const std::string &body_font,
+        const std::string &header_font, const std::string &header_font_bold,
+        bool use_utf8);
 private:
     std::string author;
     std::string title;
