@@ -177,26 +177,20 @@ FileFormatter::FileFormatter(const char *fn)
         } else {
             size_t sep = buf.find(':');
 
-            std::string_view prop(buf.begin(), buf.begin() + sep);
+            std::string prop(buf.begin(), buf.begin() + sep);
 
             // Skip spaces
             for (sep += 1; std::isspace(buf[sep]) && sep < buf.size(); sep++)
                 ;
             std::string_view value(buf.begin() + sep, buf.end());
 
-            if (prop == "author")
-                author = value;
-            else if (prop == "title")
-                title = value;
-            else if (prop == "capo")
-                capo.emplace(value);
-            else if (prop == "key")
-                key.emplace(value);
-            else if (prop == "tuning")
-                tuning.emplace(value);
-            else
-                fmt::print(stderr, "Warning: Property \"{}\" not recognized\n", prop);
+            metadata[prop] = value;
         }
+    }
+
+    if (!metadata.contains("title")) {
+        fmt::print(stderr, "Warning: No title provided\n");
+        metadata["title"] = "Untitled";
     }
 
     if (!f) {
@@ -241,10 +235,44 @@ FileFormatter::FileFormatter(const char *fn)
     } while (std::getline(f, buf));
 }
 
+std::string FileFormatter::title()
+{
+    assert(metadata.contains("title"));
+    if (metadata.contains("author"))
+        return fmt::format("{} - {}", metadata.at("author"), metadata.at("title"));
+    else
+        return fmt::format("{}", metadata.at("title"));
+}
+
+std::string FileFormatter::subtitle()
+{
+    std::stringstream ss;
+    bool previous = false;
+
+    if (metadata.contains("capo")) {
+        ss << fmt::format("Capo {}", metadata["capo"]);
+        previous = true;
+    }
+    if (metadata.contains("key")) {
+        if (previous)
+            ss << " - ";
+        ss << fmt::format("Key {}", metadata["key"]);
+        previous = true;
+    }
+    if (metadata.contains("tuning")) {
+        if (previous)
+            ss << " - ";
+        ss << fmt::format("Tuning: {}", metadata["tuning"]);
+    }
+    return ss.str();
+}
+
 void FileFormatter::print_formatted_txt()
 {
-    fmt::print("{} - {}\n", author, title);
-    fmt::print("Capo {} - Key {} - Tuning: {}\n", capo.value_or("-"), key.value_or("?"), tuning.value_or("Standard"));
+    fmt::print("{}\n", title());
+    auto sub = subtitle();
+    if (!sub.empty())
+        fmt::print("{}\n", sub);
 
     for (auto &sec : secs) {
         sec.print(std::cout);
@@ -290,21 +318,23 @@ void FileFormatter::print_formatted_pdf(const std::string &fn,
         HPDF_Font def_font;
 
         // Title
+        std::string header = title();
+
         font_name = HPDF_LoadTTFontFromFile(pdf, header_font_bold.c_str(), HPDF_TRUE);
         def_font = HPDF_GetFont(pdf, font_name, use_utf8 ? "UTF-8" : NULL);
         HPDF_Page_SetFontAndSize(page, def_font, 18);
 
-        std::string header = fmt::format("{} - {}", author, title);
         HPDF_Page_BeginText(page);
         HPDF_Page_TextOut(page, left_margin, pos, header.c_str());
         HPDF_Page_EndText(page);
 
         // Sub header
+        std::string sub_header = subtitle();
+
         font_name = HPDF_LoadTTFontFromFile(pdf, header_font.c_str(), HPDF_TRUE);
         def_font = HPDF_GetFont(pdf, font_name, use_utf8 ? "UTF-8" : NULL);
         HPDF_Page_SetFontAndSize(page, def_font, 12);
 
-        std::string sub_header = fmt::format("Capo {} - Key {} - Tuning: {}", capo.value_or("-"), key.value_or("?"), tuning.value_or("Standard"));
         HPDF_Page_BeginText(page);
         HPDF_Page_TextOut(page, left_margin, (pos -= 20), sub_header.c_str());
         HPDF_Page_EndText(page);

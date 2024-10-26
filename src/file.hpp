@@ -1,5 +1,7 @@
 #pragma once
+
 #include <optional>
+#include <map>
 #include <queue>
 #include <string>
 #include <vector>
@@ -40,12 +42,12 @@ public:
         const std::string &header_font, const std::string &header_font_bold,
         bool use_utf8);
 private:
-    std::string author;
-    std::string title;
-
-    std::optional<std::string> capo, key, tuning;
+    std::map<std::string, std::string> metadata;
 
     std::vector<Section> secs;
 
     static void print_section(std::vector<Section> &secs, int index, std::ostream &out);
+
+    std::string title();
+    std::string subtitle();
 };
