@@ -154,6 +154,21 @@ void Section::print(std::ostream &out)
     out << outs.str();
 }
 
+bool FileFormatter::is_valid_option(std::string_view opt)
+{
+    static_assert(FF_NOPTIONS == 9, "Update is_valid_option!");
+
+    return opt == FF_TITLE
+        || opt == FF_AUTHOR
+        || opt == FF_CAPO
+        || opt == FF_KEY
+        || opt == FF_TUNING
+        || opt == FF_SIZE
+        || opt == FF_BODY_FONT
+        || opt == FF_TITLE_FONT
+        || opt == FF_UTF8;
+}
+
 void FileFormatter::init(const char *fn)
 {
     // Read file
@@ -180,6 +195,11 @@ void FileFormatter::init(const char *fn)
             size_t sep = buf.find(':');
 
             std::string prop(buf.begin(), buf.begin() + sep);
+
+            if (!is_valid_option(prop)) {
+                fmt::print(stderr, "Warning: Unrecognized header option \"{}\"\n", prop);
+                continue;
+            }
 
             // Skip spaces
             for (sep += 1; std::isspace(buf[sep]) && sep < buf.size(); sep++)

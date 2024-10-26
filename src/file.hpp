@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+// INCREASE FOR NEW OPTION
+#define FF_NOPTIONS     9
 // Data printed out
 #define FF_TITLE 		"title"
 #define FF_AUTHOR 		"author"
@@ -57,7 +59,7 @@ private:
 
     std::vector<Section> secs;
 
-    static void print_section(std::vector<Section> &secs, int index, std::ostream &out);
+    static bool is_valid_option(std::string_view opt);
 
     std::string title();
     std::string subtitle();

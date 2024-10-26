@@ -3,6 +3,7 @@ title: The Battle Hymn of the Republic
 capo: None
 key: G
 tuning: Standard
+size: 13
 
 [Verse]
 chords: G G7 G7/B C G D7 G G7 B7 Em Am D4 D G
