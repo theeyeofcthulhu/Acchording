@@ -11,7 +11,9 @@
 
 #include <hpdf.h>
 
+#include "config.hpp"
 #include "file.hpp"
+#include "font.hpp"
 
 std::vector<Section> *Section::global_array = nullptr;
 
@@ -152,7 +154,7 @@ void Section::print(std::ostream &out)
     out << outs.str();
 }
 
-FileFormatter::FileFormatter(const char *fn)
+void FileFormatter::init(const char *fn)
 {
     // Read file
     std::ifstream f(fn);
@@ -184,14 +186,26 @@ FileFormatter::FileFormatter(const char *fn)
                 ;
             std::string_view value(buf.begin() + sep, buf.end());
 
-            metadata[prop] = value;
+            // Prefer data already provided in command line
+            if (!metadata.contains(prop))
+                metadata[prop] = value;
         }
     }
 
-    if (!metadata.contains("title")) {
+    // Load default values if they were neither
+    // defined in command line nor in file
+    if (!metadata.contains(FF_TITLE)) {
         fmt::print(stderr, "Warning: No title provided\n");
-        metadata["title"] = "Untitled";
+        metadata[FF_TITLE] = "Untitled";
     }
+    if (!metadata.contains(FF_SIZE))
+        metadata[FF_SIZE] = ACCHORDING_BODY_FONT_SIZE;
+    if (!metadata.contains(FF_BODY_FONT))
+        metadata[FF_BODY_FONT] = ACCHORDING_BODY_FONT;
+    if (!metadata.contains(FF_TITLE_FONT))
+        metadata[FF_TITLE_FONT] = ACCHORDING_HEADER_FONT;
+    if (!metadata.contains(FF_UTF8))
+        metadata[FF_UTF8] = "false";
 
     if (!f) {
         fmt::print(stderr, "Warning: File ended before any [Tags]\n");
@@ -237,11 +251,11 @@ FileFormatter::FileFormatter(const char *fn)
 
 std::string FileFormatter::title()
 {
-    assert(metadata.contains("title"));
-    if (metadata.contains("author"))
-        return fmt::format("{} - {}", metadata.at("author"), metadata.at("title"));
+    assert(metadata.contains(FF_TITLE));
+    if (metadata.contains(FF_AUTHOR))
+        return fmt::format("{} - {}", metadata.at(FF_AUTHOR), metadata.at(FF_TITLE));
     else
-        return fmt::format("{}", metadata.at("title"));
+        return fmt::format("{}", metadata.at(FF_TITLE));
 }
 
 std::string FileFormatter::subtitle()
@@ -249,22 +263,27 @@ std::string FileFormatter::subtitle()
     std::stringstream ss;
     bool previous = false;
 
-    if (metadata.contains("capo")) {
-        ss << fmt::format("Capo {}", metadata["capo"]);
+    if (metadata.contains(FF_CAPO)) {
+        ss << fmt::format("Capo {}", metadata[FF_CAPO]);
         previous = true;
     }
-    if (metadata.contains("key")) {
+    if (metadata.contains(FF_KEY)) {
         if (previous)
             ss << " - ";
-        ss << fmt::format("Key {}", metadata["key"]);
+        ss << fmt::format("Key {}", metadata[FF_KEY]);
         previous = true;
     }
-    if (metadata.contains("tuning")) {
+    if (metadata.contains(FF_TUNING)) {
         if (previous)
             ss << " - ";
-        ss << fmt::format("Tuning: {}", metadata["tuning"]);
+        ss << fmt::format("Tuning: {}", metadata[FF_TUNING]);
     }
     return ss.str();
+}
+
+void FileFormatter::put_metadata(std::string_view key, std::string_view value)
+{
+    metadata[std::string(key)] = std::string(value);
 }
 
 void FileFormatter::print_formatted_txt()
@@ -288,17 +307,40 @@ void error_handler(HPDF_STATUS error_no, HPDF_STATUS detail_no, void *user_data)
     throw std::exception (); /* throw exception on error */
 }
 
-void FileFormatter::print_formatted_pdf(const std::string &fn,
-        int body_font_size, const std::string &body_font,
-        const std::string &header_font, const std::string &header_font_bold,
-        bool use_utf8)
+void FileFormatter::print_formatted_pdf(const std::string &fn)
 {
+    assert(metadata.contains(FF_BODY_FONT)
+            && metadata.contains(FF_TITLE_FONT)
+            && metadata.contains(FF_UTF8)
+            && metadata.contains(FF_SIZE));
+
     HPDF_Doc pdf = HPDF_New(error_handler, NULL);
 
     if (!pdf) {
         fmt::print(stderr, "hpdf: cannot create document\n");
         return;
     }
+
+    std::string body_font_file;
+    std::string header_font_file;
+    std::string header_bold_font_file;
+
+    {
+        FontMatcher fm;
+
+        // These shouldn't fail, as fontconfig will just default
+        // back to another font if it can't find a match
+        body_font_file = fm.match_name(metadata[FF_BODY_FONT]);
+        header_font_file = fm.match_name(fmt::format("{}:Regular", metadata[FF_TITLE_FONT]));
+        header_bold_font_file = fm.match_name(fmt::format("{}:Bold", metadata[FF_TITLE_FONT]));
+
+        fmt::print("Body font: {}\n", body_font_file);
+        fmt::print("Header font: {}\n", header_font_file);
+        fmt::print("Header font (bold): {}\n", header_bold_font_file);
+    }
+
+    bool use_utf8 = (metadata[FF_UTF8] == "true") || (metadata[FF_UTF8] == "1");
+    int body_font_size = std::stoi(metadata[FF_SIZE]);
 
     try {
         if (use_utf8) {
@@ -320,7 +362,7 @@ void FileFormatter::print_formatted_pdf(const std::string &fn,
         // Title
         std::string header = title();
 
-        font_name = HPDF_LoadTTFontFromFile(pdf, header_font_bold.c_str(), HPDF_TRUE);
+        font_name = HPDF_LoadTTFontFromFile(pdf, header_bold_font_file.c_str(), HPDF_TRUE);
         def_font = HPDF_GetFont(pdf, font_name, use_utf8 ? "UTF-8" : NULL);
         HPDF_Page_SetFontAndSize(page, def_font, 18);
 
@@ -331,7 +373,7 @@ void FileFormatter::print_formatted_pdf(const std::string &fn,
         // Sub header
         std::string sub_header = subtitle();
 
-        font_name = HPDF_LoadTTFontFromFile(pdf, header_font.c_str(), HPDF_TRUE);
+        font_name = HPDF_LoadTTFontFromFile(pdf, header_font_file.c_str(), HPDF_TRUE);
         def_font = HPDF_GetFont(pdf, font_name, use_utf8 ? "UTF-8" : NULL);
         HPDF_Page_SetFontAndSize(page, def_font, 12);
 
@@ -343,7 +385,7 @@ void FileFormatter::print_formatted_pdf(const std::string &fn,
         HPDF_Page_BeginText(page);
         HPDF_Page_MoveTextPos(page, left_margin, (pos -= 10));
 
-        font_name = HPDF_LoadTTFontFromFile(pdf, body_font.c_str(), HPDF_TRUE);
+        font_name = HPDF_LoadTTFontFromFile(pdf, body_font_file.c_str(), HPDF_TRUE);
         def_font = HPDF_GetFont(pdf, font_name, use_utf8 ? "UTF-8" : NULL);
 
         HPDF_Page_SetFontAndSize(page, def_font, body_font_size);

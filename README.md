@@ -64,6 +64,8 @@ If `-p` is passed, the program will output a PDF containing the input chord shee
 
 Pass `--help` for list of available options. If you want to print UTF-8 encoded characters (like Cyrillic ones), you have to pass `-u`.
 
+You can also provide options in the file header; see `src/file.hpp` for possible options. Values in file header are overridden by values passed via command line.
+
 ```
 $ acchording -p song.txt # Outputs song.pdf
 $ acchording -p --body-font "Ubuntu Mono:Regular" --size 12 song.txt

@@ -6,6 +6,18 @@
 #include <string>
 #include <vector>
 
+// Data printed out
+#define FF_TITLE 		"title"
+#define FF_AUTHOR 		"author"
+#define FF_CAPO 		"capo"
+#define FF_KEY      	"key"
+#define FF_TUNING 		"tuning"
+// Options for PDF generation
+#define FF_SIZE 		"size" // int
+#define FF_BODY_FONT 	"body-font"
+#define FF_TITLE_FONT	"title-font"
+#define FF_UTF8 		"utf8" // Should have value 'true' or '1', everything else is valued as false
+
 class Section {
 public:
     enum class Type {
@@ -34,13 +46,12 @@ private:
 
 class FileFormatter {
 public:
-    FileFormatter(const char *fn);
+    void init(const char *fn);
+
+    void put_metadata(std::string_view key, std::string_view value);
 
     void print_formatted_txt();
-    void print_formatted_pdf(const std::string &fn,
-        int body_font_size, const std::string &body_font,
-        const std::string &header_font, const std::string &header_font_bold,
-        bool use_utf8);
+    void print_formatted_pdf(const std::string &fn);
 private:
     std::map<std::string, std::string> metadata;
 
