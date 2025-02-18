@@ -31,6 +31,8 @@ public:
     Section(std::string_view sec);
     void print(std::ostream &out);
 
+    bool page_break() const { return m_page_break; }
+
     // This is for accessing the other sections
     // when reaccessing a prior defined one
     static std::vector<Section> *global_array;
@@ -44,6 +46,8 @@ private:
 
     bool hide_name = false; // Hide tag name
     std::optional<std::string> output; // For reproducing later
+
+    bool m_page_break = false;
 };
 
 class FileFormatter {

@@ -43,6 +43,7 @@ to >you
 [!Section Name] (Hides section name in output)
 [>Section Name] (Defines section to be reproduced later)
 [<Section Name] (Reproduces section)
+[/Section Name] (PDF: Begins new page after section)
 ```
 
 ## Example

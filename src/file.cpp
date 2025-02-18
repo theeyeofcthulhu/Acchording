@@ -39,6 +39,9 @@ Section::Section(std::string_view sec)
         } else if (name.starts_with('<')) {
             type = Section::Type::Reproducing;
             name.erase(name.begin());
+        } else if (name.starts_with('/')) {
+            m_page_break = true;
+            name.erase(name.begin());
         } else {
             break;
         }
@@ -408,6 +411,17 @@ void FileFormatter::print_formatted_pdf(const std::string &fn)
         font_name = HPDF_LoadTTFontFromFile(pdf, body_font_file.c_str(), HPDF_TRUE);
         def_font = HPDF_GetFont(pdf, font_name, use_utf8 ? "UTF-8" : NULL);
 
+        auto next_page = [&]() {
+            HPDF_Page_EndText(page);
+            page = HPDF_AddPage(pdf);
+
+            HPDF_Page_BeginText(page);
+
+            pos = height - 30;
+            HPDF_Page_MoveTextPos(page, left_margin, pos);
+            HPDF_Page_SetFontAndSize(page, def_font, body_font_size);
+        };
+
         HPDF_Page_SetFontAndSize(page, def_font, body_font_size);
         for (auto &sec : secs) {
             std::stringstream ss;
@@ -417,18 +431,15 @@ void FileFormatter::print_formatted_pdf(const std::string &fn)
             while (std::getline(ss, buf)) {
                 // Page is full, go to next
                 if (HPDF_Point p = HPDF_Page_GetCurrentTextPos(page); p.y < 50) {
-                    HPDF_Page_EndText(page);
-                    page = HPDF_AddPage(pdf);
-
-                    HPDF_Page_BeginText(page);
-
-                    pos = height - 30;
-                    HPDF_Page_MoveTextPos(page, left_margin, pos);
-                    HPDF_Page_SetFontAndSize(page, def_font, body_font_size);
+                    next_page();
                 }
 
                 HPDF_Page_ShowText(page, buf.c_str());
                 HPDF_Page_MoveTextPos(page, 0, -(body_font_size+2));
+            }
+
+            if (sec.page_break()) {
+                next_page();
             }
         }
         HPDF_Page_EndText(page);
