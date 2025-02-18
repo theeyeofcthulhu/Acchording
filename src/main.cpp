@@ -36,6 +36,9 @@ int main(int argc, char **argv)
     parser.add({'u', "utf8", "Use UTF-8 in PDF generation", [&ff]() {
         ff.put_metadata(FF_UTF8, "true");
     }});
+    parser.add({"split", "Write both halves of PDF page", [&ff]() {
+        ff.put_metadata(FF_SPLIT, "true");
+    }});
     parser.add_help("acchording [args] file");
 
     parser.parse(argc, argv);

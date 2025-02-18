@@ -7,7 +7,7 @@
 #include <vector>
 
 // INCREASE FOR NEW OPTION
-#define FF_NOPTIONS     9
+#define FF_NOPTIONS     10
 // Data printed out
 #define FF_TITLE 		"title"
 #define FF_AUTHOR 		"author"
@@ -19,6 +19,7 @@
 #define FF_BODY_FONT 	"body-font"
 #define FF_TITLE_FONT	"title-font"
 #define FF_UTF8 		"utf8" // Should have value 'true' or '1', everything else is valued as false
+#define FF_SPLIT 		"split" // Should have value 'true' or '1', everything else is valued as false
 
 class Section {
 public:

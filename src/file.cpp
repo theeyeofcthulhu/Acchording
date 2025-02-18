@@ -159,7 +159,7 @@ void Section::print(std::ostream &out)
 
 bool FileFormatter::is_valid_option(std::string_view opt)
 {
-    static_assert(FF_NOPTIONS == 9, "Update is_valid_option!");
+    static_assert(FF_NOPTIONS == 10, "Update is_valid_option!");
 
     return opt == FF_TITLE
         || opt == FF_AUTHOR
@@ -169,7 +169,8 @@ bool FileFormatter::is_valid_option(std::string_view opt)
         || opt == FF_SIZE
         || opt == FF_BODY_FONT
         || opt == FF_TITLE_FONT
-        || opt == FF_UTF8;
+        || opt == FF_UTF8
+        || opt == FF_SPLIT;
 }
 
 void FileFormatter::init(const char *fn)
@@ -229,6 +230,8 @@ void FileFormatter::init(const char *fn)
         metadata[FF_TITLE_FONT] = ACCHORDING_HEADER_FONT;
     if (!metadata.contains(FF_UTF8))
         metadata[FF_UTF8] = "false";
+    if (!metadata.contains(FF_SPLIT))
+        metadata[FF_SPLIT] = "false";
 
     if (!f) {
         fmt::print(stderr, "Warning: File ended before any [Tags]\n");
@@ -335,7 +338,8 @@ void FileFormatter::print_formatted_pdf(const std::string &fn)
     assert(metadata.contains(FF_BODY_FONT)
             && metadata.contains(FF_TITLE_FONT)
             && metadata.contains(FF_UTF8)
-            && metadata.contains(FF_SIZE));
+            && metadata.contains(FF_SIZE)
+            && metadata.contains(FF_SPLIT));
 
     HPDF_Doc pdf = HPDF_New(error_handler, NULL);
 
@@ -362,6 +366,8 @@ void FileFormatter::print_formatted_pdf(const std::string &fn)
         fmt::print("Header font (bold): {}\n", header_bold_font_file);
     }
 
+    // TODO: unify checking metadata boolean value
+    bool split_page = (metadata[FF_SPLIT] == "true") || (metadata[FF_SPLIT] == "1");
     bool use_utf8 = (metadata[FF_UTF8] == "true") || (metadata[FF_UTF8] == "1");
     int body_font_size = std::stoi(metadata[FF_SIZE]);
 
@@ -377,6 +383,7 @@ void FileFormatter::print_formatted_pdf(const std::string &fn)
         height = HPDF_Page_GetHeight(page);
 
         int pos = height - 50;
+
         const int left_margin = 50;
 
         const char *font_name;
@@ -411,15 +418,33 @@ void FileFormatter::print_formatted_pdf(const std::string &fn)
         font_name = HPDF_LoadTTFontFromFile(pdf, body_font_file.c_str(), HPDF_TRUE);
         def_font = HPDF_GetFont(pdf, font_name, use_utf8 ? "UTF-8" : NULL);
 
+        const HPDF_REAL split_page_right_x = HPDF_Page_GetWidth(page) / 2;
+        bool split_page_right = false;
+        int starting_pos = pos;
+
         auto next_page = [&]() {
-            HPDF_Page_EndText(page);
-            page = HPDF_AddPage(pdf);
+            // Write right half of page
+            if (split_page && !split_page_right) {
+                HPDF_Page_EndText(page);
+                HPDF_Page_BeginText(page);
 
-            HPDF_Page_BeginText(page);
+                HPDF_Page_MoveTextPos(page, split_page_right_x, starting_pos);
+            } else {
+                HPDF_Page_EndText(page);
+                page = HPDF_AddPage(pdf);
 
-            pos = height - 30;
-            HPDF_Page_MoveTextPos(page, left_margin, pos);
-            HPDF_Page_SetFontAndSize(page, def_font, body_font_size);
+                HPDF_Page_BeginText(page);
+
+                pos = height - 30;
+                HPDF_Page_MoveTextPos(page, left_margin, pos);
+                HPDF_Page_SetFontAndSize(page, def_font, body_font_size);
+            }
+
+            if (split_page) { // probably acceptable overhead when
+                              // not splitting
+                split_page_right = !split_page_right;
+                starting_pos = height - 30; // if not first page
+            }
         };
 
         HPDF_Page_SetFontAndSize(page, def_font, body_font_size);
