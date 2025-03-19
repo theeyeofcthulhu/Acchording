@@ -78,7 +78,7 @@ Section::Section(std::string_view sec)
         remainder = remainder.substr(remainder.find('\n') + 1);
     }
 
-    while (isspace(remainder[remainder.size()-1]))
+    while (remainder.size() > 0 && isspace(remainder[remainder.size()-1]))
         remainder.remove_suffix(1);
 
     text = remainder;
