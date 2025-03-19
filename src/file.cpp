@@ -46,11 +46,9 @@ Section::Section(std::string_view sec)
             break;
         }
     }
-    if (type == Section::Type::Reproducing)
-        return;
 
-    // No content
-    if (remainder_beg == sec.size()) {
+    // Section needs or has no content
+    if (type == Section::Type::Reproducing || remainder_beg == sec.size()) {
         text = "";
         return;
     }
@@ -112,7 +110,7 @@ void Section::print(std::ostream &out)
     fmt::print(outs, "\n");
 
     if (!hide_name)
-        fmt::print(outs, "[{}]\n\n", name);
+        fmt::print(outs, "[{}]\n", name);
 
     if (chords.has_value()) {
         std::stringstream ss(text);
@@ -145,10 +143,10 @@ void Section::print(std::ostream &out)
                 }
             }
 
-            fmt::print(outs, "{}\n{}\n", chord_line, buf);
+            fmt::print(outs, "\n{}\n{}\n", chord_line, buf);
         }
-    } else {
-        fmt::print(outs, "{}", text);
+    } else if (!text.empty()) {
+        fmt::print(outs, "\n{}", text);
     }
 
     if (type == Section::Type::Reproducible) {
