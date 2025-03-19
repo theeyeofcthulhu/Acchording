@@ -13,6 +13,14 @@ capo: None
 key: G
 tuning: Standard
 ```
+Header options for PDF generation, which have equivalent command-line flags (see help page by executing `acchording --help`):
+```
+size: 11
+body-font: Ubuntu Mono
+title-font: Arial
+utf-8: 1
+split: 1
+```
 
 ## Sections
 
@@ -65,7 +73,7 @@ If `-p` is passed, the program will output a PDF containing the input chord shee
 
 Pass `--help` for list of available options. If you want to print UTF-8 encoded characters (like Cyrillic ones), you have to pass `-u`.
 
-You can also provide options in the file header; see `src/file.hpp` for possible options. Values in file header are overridden by values passed via command line.
+You can also provide options in the file header; see above for possible options. Values in file header are overridden by values passed via command line.
 
 ```
 $ acchording -p song.txt # Outputs song.pdf
