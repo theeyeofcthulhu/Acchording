@@ -25,7 +25,7 @@ Section::Section(std::string_view sec)
     name = sec.substr(1, sec.find(']')-1);
 
     size_t remainder_beg = sec.find(']') + 1;
-    for (; std::isspace(sec[remainder_beg]) && remainder_beg < sec.size(); remainder_beg++)
+    for (; sec[remainder_beg] == '\n' && remainder_beg < sec.size(); remainder_beg++)
         ;
 
     // Parse special commands
