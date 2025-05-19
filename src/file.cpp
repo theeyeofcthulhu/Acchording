@@ -24,6 +24,10 @@ Section::Section(std::string_view sec)
 
     name = sec.substr(1, sec.find(']')-1);
 
+    // FIXME: find first non-empty and remove spaces up to there
+    // copying from sites like Ultimate Guitar might produce
+    // lines containing a single space character, which do
+    // not get eliminated here
     size_t remainder_beg = sec.find(']') + 1;
     for (; sec[remainder_beg] == '\n' && remainder_beg < sec.size(); remainder_beg++)
         ;
