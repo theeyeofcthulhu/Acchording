@@ -29,7 +29,7 @@ Section::Section(std::string_view sec)
     // lines containing a single space character, which do
     // not get eliminated here
     size_t remainder_beg = sec.find(']') + 1;
-    for (; sec[remainder_beg] == '\n' && remainder_beg < sec.size(); remainder_beg++)
+    for (; remainder_beg < sec.size() && sec[remainder_beg] == '\n'; remainder_beg++)
         ;
 
     // Parse special commands
